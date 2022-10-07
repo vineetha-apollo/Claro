@@ -22,8 +22,8 @@ import datetime
 f = Figlet()
 console = Console()
 
-print(Fore.CYAN,f.renderText('W E L C O M E  T O  C  L  A  R  O'))
-# print(Fore.CYAN,f.renderText('C  L  A  R  O'))
+# print(Fore.CYAN,f.renderText('W E L C O M E  T O  C  L  A  R  O'))
+print(Fore.CYAN,f.renderText('C  L  A  R  O'))
 
 # con = sqlite3.connect("db_file.sqlite3")
 # cur = con.cursor()
@@ -341,15 +341,27 @@ def List():
 def ViewGroups():
    
     response = []
-    task_lst = models.Groups.select()
+    task_lst = models.Group.select()
     for l in task_lst.dicts():
         response.append(l)
     console = Console()
- 
-    
     user_renderables = [Panel(get_content_group(user), expand=True) if user["status"] == 'Pending' or user["status"] == 'Completed' else '' for user in response]
     console.print(Columns(user_renderables))
-    
+    show_user_prompt = [
+        {
+            'type' : 'input',
+            'name' : 'show_users_list',
+            'message' : 'Want to see the users in groups, enter a group id - ', 
+            
+        }
+    ]
+    user_list_prompt = prompt(show_user_prompt)
+    show_users_list = user_list_prompt.get('show_users_list')
+    userslist = []
+    modal = models.Group
+    group_users = modal.get(modal.group_id == show_users_list)
+    console.print(group_users.user_ids)
+
     PreviousActions('tasks','Groups')
 
 def Update():
@@ -495,8 +507,6 @@ def get_content_group(user):
     #     color = 'green'
     return f"[b][yellow]{t_id}.{title}[/b]\n[white]{desc}"
    
-
-
 def Groups():
     list_ques=[
         {
@@ -536,17 +546,32 @@ def Groups():
         desc = answers.get('grp_desc')
         grp_add_users = answers.get('grp_add_users')
         if grp_add_users == 'Add Now':
-            pass
-        elif grp_add_users == 'Add Later':
-            models.Groups.create(title=name,status='Pending',priority='priority',description=desc)
+            users = []
+            usersdata = models.Users.select()
+            for l in usersdata.dicts():
+                users.append(l['username'])
+            # print(users,'67568437658346')
 
+            users_prompt = [
+                 {
+                    'type': "checkbox",
+                    "name": "grp_add_users",
+                    "message": "Select the users to add in the group ",
+                    'choices':users
+                },
+            ]
+            users_answers = prompt(users_prompt)
+            users_selected = users_answers.get('grp_add_users')
+            models.Group.create(title=name,status='Pending',priority='priority',description=desc,user_ids=users_selected)
+        elif grp_add_users == 'Add Later':
+            models.Group.create(title=name,status='Pending',priority='priority',description=desc)
         print(Back.GREEN,'*** Group created successfully ***')
         print(Style.RESET_ALL)
+    elif answers.get("user_option") == "View":
+        ViewGroups()
         
     # elif answers.get("user_option") == "Delete":
     #     Delete()
-    elif answers.get("user_option") == "View":
-        ViewGroups()
     # elif answers.get("user_option") == "Update":
     #     Update()
     elif answers.get("user_option") == "Go back to the main menu":
@@ -554,6 +579,30 @@ def Groups():
     PreviousActions('tasks','Groups')
    
 
+
+def Users():
+    user_add = [
+            {
+                'type': "input",
+                "name": "username",
+                "message": "Enter your name",
+                "validate": EmptyInputValidator(),
+                "filter": lambda val: str(val)
+            },
+            {
+                'type': "input",
+                "name": "user_pwd",
+                "message": "Enter the password",
+                "validate": EmptyInputValidator(),
+                "filter": lambda val: str(val)
+            },
+            
+        ]
+    
+    answers = prompt(user_add)
+    username = answers.get('username')
+    userpassword = answers.get('user_pwd')
+    models.Users.create(username=username,password=userpassword,status=1)
 
 
 def main():
@@ -563,7 +612,7 @@ def main():
     if answers.get("user_option") == "Tasks":
         Tasks()
     elif answers.get("user_option") == "Users":
-        Delete(a, b)
+        Users()
     elif answers.get("user_option") == "Groups":
         Groups()
     elif answers.get("user_option") == "Meetings":
