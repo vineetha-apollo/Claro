@@ -3,9 +3,11 @@ from peewee import *
 from peewee_migrate import Router
 import datetime
 import orm_sqlite 
+# from playhouse.migrate import *
 
 
 db = SqliteDatabase('database.db')
+# migrator = SqliteMigrator(db)
 
 class Tasks(Model):
     task_id = AutoField()
@@ -21,7 +23,8 @@ class Tasks(Model):
     class Meta:
         database=db
         db_table='Tasks'
-class Groups(Model):
+
+class Group(Model):
     group_id = AutoField()
     title = CharField()
     start_date = DateField(default=None,null=True)
@@ -30,25 +33,27 @@ class Groups(Model):
     priority = CharField()
     description = CharField(null=False)
     created_at = DateTimeField(default=datetime.datetime.now)
+    user_ids = CharField()
     # start_at = DateTimeField(default=datetime.datetime.now)
     # end_at = DateTimeField(default=datetime.datetime.now)
     
     class Meta:
         database=db
-        db_table='Groups'
+        db_table='Group'
+
+class Users(Model):
+    user_id = AutoField()
+    username = CharField()
+    password = CharField()
+    created_at = DateTimeField(default=datetime.datetime.now)
+    status = CharField()
+    class Meta:
+        database=db
+        db_table='Users'
 
 
-models = [Tasks,Groups]
+models = [Tasks,Group,Users]
 # db.drop_tables(models)
 db.create_tables(models,safe=True)
 
 
-# def initialize():
-#     db.connect()
-#     db.create_tables(modelss, safe=True)
-#     db.close()
-
-# import models
-
-# if __name__ == '__main__':
-#     models.initialize()
