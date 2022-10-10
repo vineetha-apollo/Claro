@@ -8,6 +8,19 @@ import orm_sqlite
 
 db = SqliteDatabase('database.db')
 # migrator = SqliteMigrator(db)
+# router = Router(db)
+
+# # Create migration
+# router.create('migration_name')
+
+# # Run migration/migrations
+# router.run('migration_name')
+
+# # Run all unapplied migrations
+# router.run()
+
+# Run all unapplied migrations
+# router.run()
 
 class Tasks(Model):
     task_id = AutoField()
@@ -33,7 +46,7 @@ class Group(Model):
     priority = CharField()
     description = CharField(null=False)
     created_at = DateTimeField(default=datetime.datetime.now)
-    user_ids = CharField()
+    user_ids = CharField(null=True)
     # start_at = DateTimeField(default=datetime.datetime.now)
     # end_at = DateTimeField(default=datetime.datetime.now)
     

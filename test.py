@@ -1,7 +1,7 @@
 from turtle import width
+from InquirerPy import get_style
 from InquirerPy import prompt
 # from examples import *
-
 from InquirerPy.validator import *
 from prompt_toolkit.validation import Validator, ValidationError
 import sqlite3
@@ -17,13 +17,40 @@ import orm_sqlite
 from colorama import *
 import random
 import datetime
+import ast
 
 
-f = Figlet()
+style1 = {
+    "questionmark": "#ff0000",
+    "answermark": "#e5c000",
+    "answer": "#61afef",
+    "input": "#98c379",
+    "question": "#ffff00",
+    "answered_question": "#aaaa55",
+    "instruction": "#2222aa",
+    "long_instruction": "#abb2bf",
+    "pointer": "#3414bb",
+    "checkbox": "#98c3c9",
+    "separator": "",
+    "skipped": "#5c6370",
+    "validator": "",
+    "marker": "#e5c07b",
+    "fuzzy_prompt": "#c678dd",
+    "fuzzy_info": "#abb2bf",
+    "fuzzy_border": "#4b5263",
+    "fuzzy_match": "#c678dd",
+    "spinner_pattern": "#e5c07b",
+    "spinner_text": "",
+}
+
+
+f = Figlet(font='alligator')
 console = Console()
 
 # print(Fore.CYAN,f.renderText('W E L C O M E  T O  C  L  A  R  O'))
-print(Fore.CYAN,f.renderText('C  L  A  R  O'))
+print()
+print(Fore.BLUE,f.renderText('C L  A R O'))
+print(Fore.RESET)
 
 # con = sqlite3.connect("db_file.sqlite3")
 # cur = con.cursor()
@@ -48,7 +75,7 @@ questions = [
     {
         'type': 'list',
         'name': 'user_option',
-        'message': 'Welcome to claro,How do u want to use claro today?',
+        'message': 'Welcome to claro, How do u want to use claro today?',
         'choices': ["Tasks","Users","Groups", "Meetings"]
     },
 
@@ -89,7 +116,7 @@ def Tasks():
                 'choices': ["Create","View","Update","Delete","Go back to the main menu"]
             },
         ]
-    answers = prompt(list_ques)
+    answers = prompt(list_ques,style=style1)
     if answers.get("user_option") == "Create":
         task_add = [
             {
@@ -113,7 +140,7 @@ def Tasks():
                 'choices':['Now', 'Later']
             },
         ]
-        answers = prompt(task_add)
+        answers = prompt(task_add,style=style1)
         name = answers.get('task_name')
         desc = answers.get('task_desc')
         task_start = answers.get('task_start')
@@ -122,18 +149,22 @@ def Tasks():
                 {
                     'type': "input",
                     "name": "end_date",
-                    "message": "Enter the End date (optional)",
+                    "message": "Enter the End date in YYYY-MM-DD (optional input)",
                     
                 },
             ]
-            end_date_answers = prompt(end_dates)
+            end_date_answers = prompt(end_dates,style=style1)
             end_date = end_date_answers.get('end_date')
+            if end_date :
+                end_date = end_date
+            else : 
+                end_date = None
             models.Tasks.create(title=name,status='Pending',priority='priority',description=desc,start_date=datetime.datetime.today(),due_date=end_date)
         elif task_start == 'Later':
-            models.Tasks.create(title=name,status='Pending',priority='priority',description=desc)
+            models.Tasks.create(title=name,status='Pending',priority='priority',description=desc,start_date=None,due_date=None)
 
-        print(Back.GREEN,'*** Task created successfully ***')
-        print(Style.RESET_ALL)
+        print(Fore.GREEN,'******************* Task created successfully *******************')
+        print(Fore.RESET)
         
     elif answers.get("user_option") == "Delete":
         Delete()
@@ -155,7 +186,7 @@ def PreviousActions(actiontype,modeltype):
                 'choices': ["Go back to the previous menu","Go back to the main menu"]
             },
         ]
-    answers = prompt(list_ques) 
+    answers = prompt(list_ques,style=style1) 
     if modeltype == 'Tasks':
         if answers.get("user_option") == "Go back to the previous menu":
             if actiontype == 'tasks' :
@@ -180,12 +211,12 @@ def DeleteConfirm(id):
         {
             'type': "input",
             "name": "confirm",
-            "message": "Are you sure, want to delete the task (y/N):",
+            "message": "Are you sure, want to delete the task (Y/N):",
             "validate": EmptyInputValidator(),
             "filter": lambda val: str(val)
         }
     ]
-    task_delete_confirm_prompt = prompt(task_delete_confirm)
+    task_delete_confirm_prompt = prompt(task_delete_confirm,style=style1)
     task_confirm_data = task_delete_confirm_prompt.get('confirm')
     # print(task_confirm_data,'afsdf')
     modal = models.Tasks
@@ -206,7 +237,7 @@ def DeleteConfirm(id):
         console.print(Fore.BLUE,'Given task is not deleted')
     else:
         print(Fore.RED,'Please enter (y/N), to confirm the deletion')
-        task_delete_confirm_prompt = prompt(task_delete_confirm)    
+        task_delete_confirm_prompt = prompt(task_delete_confirm,style=style1)    
 
 def UpdateConfirm(id,task_column,task_update_data):
     task_update_confirm =[
@@ -218,7 +249,7 @@ def UpdateConfirm(id,task_column,task_update_data):
             "filter": lambda val: str(val)
         }
     ]
-    task_update_confirm_prompt = prompt(task_update_confirm)
+    task_update_confirm_prompt = prompt(task_update_confirm,style=style1)
     task_confirm_data = task_update_confirm_prompt.get('confirm')
     task_confirm_data.capitalize()
     modal = models.Tasks
@@ -246,7 +277,7 @@ def UpdateConfirm(id,task_column,task_update_data):
         print(Fore.BLUE,'Given task status is not updated')
     else:
         print(Fore.RED,'Please enter (y/N), to confirm the updation')
-        task_update_confirm_prompt = prompt(task_update_confirm)
+        task_update_confirm_prompt = prompt(task_update_confirm,style=style1)
     PreviousActions('tasks','Tasks')
 
 def Delete():
@@ -265,11 +296,12 @@ def Delete():
         response.append(l)
     console = Console()
     print(Fore.BLUE,'Please select the task id from the below list to delete a task')
+    print(Fore.RESET)
     user_renderables = [Panel(get_content(user), expand=True) if user["status"] == 'Pending' or user["status"] == 'Completed' else '' for user in response]
     console.print(Columns(user_renderables))
 
 
-    answers = prompt(task_delete)
+    answers = prompt(task_delete,style=style1)
     id = int(answers.get('task_id'))
 
     task_delete_confirm =[
@@ -281,7 +313,7 @@ def Delete():
             "filter": lambda val: str(val)
         }
     ]
-    task_delete_confirm_prompt = prompt(task_delete_confirm)
+    task_delete_confirm_prompt = prompt(task_delete_confirm,style=style1)
     task_confirm_data = task_delete_confirm_prompt.get('confirm')
     # print(task_confirm_data,'afsdf')
     modal = models.Tasks
@@ -315,7 +347,7 @@ def List():
                 'choices': ["All","Completed","Pending","Go back to the previous menu","Go back to the main menu"]
             },
         ]
-    answers = prompt(list_ques)
+    answers = prompt(list_ques,style=style1)
     res = answers.get('user_res')
     response = []
     task_lst = models.Tasks.select()
@@ -355,12 +387,22 @@ def ViewGroups():
             
         }
     ]
-    user_list_prompt = prompt(show_user_prompt)
+    user_list_prompt = prompt(show_user_prompt,style=style1)
     show_users_list = user_list_prompt.get('show_users_list')
-    userslist = []
-    modal = models.Group
-    group_users = modal.get(modal.group_id == show_users_list)
-    console.print(group_users.user_ids)
+    try:
+        userslist = []
+        modal = models.Group
+        group_users = modal.get(modal.group_id == show_users_list)
+        try:
+            if group_users:
+                console.print(Columns([Panel(user, expand=True) for user in group_users]))
+        except:
+            print(Fore.RED,'Oops!, No user found in this Group',end='')
+            print(Fore.RESET)
+    except:
+        pass
+    # user_grp_list = ast.literal_eval(group_users.user_ids)
+    # console.print(Columns([Panel(user, expand=True) for user in user_grp_list]))
 
     PreviousActions('tasks','Groups')
 
@@ -388,15 +430,28 @@ def Update():
         response.append(l)
     console = Console()
     print(Fore.BLUE,'Please select the task id from the below list to update a task status')
+    print(Fore.RESET)
     user_renderables = [Panel(get_content(user), expand=True) if user["status"] == 'Pending' or user["status"] == 'Completed' else '' for user in response]
     console.print(Columns(user_renderables))
 
 
-    answers = prompt(task_update)
+    answers = prompt(task_update,style=style1)
     id = int(answers.get('task_id'))
+    try:
+        id_1 = models.Tasks.get(models.Tasks.task_id == id)
+    except:
+        id_1 = None
+    if id_1:
+        task_update_column_answer = prompt(task_update_column,style=style1)
+        task_column= task_update_column_answer.get('task_column')
+    else:
+        task = 'No Task matched with this task ID'
+        # print(Fore.RED,'Something went wrong, Please try again....')
+        print(Fore.RED,'Given task id does not exist, please try again')
+        print(Fore.RESET)
+        task_column = None
+        PreviousActions('tasks','Tasks')
 
-    task_update_column_answer = prompt(task_update_column)
-    task_column= task_update_column_answer.get('task_column')
 
     if task_column == 'Status':
        
@@ -408,7 +463,7 @@ def Update():
                 "choices":['Pending','Completed'],
             }
         ]
-        task_update_status = prompt(task_update_column_enter)
+        task_update_status = prompt(task_update_column_enter,style=style1)
         task_update_data= task_update_status.get('task_status')
     elif task_column == 'Start Date':
         task_update_column_enter =[
@@ -420,7 +475,7 @@ def Update():
                 "filter": lambda val: str(val)
             }
         ]
-        task_update_status = prompt(task_update_column_enter)
+        task_update_status = prompt(task_update_column_enter,style=style1)
         task_update_data= task_update_status.get('task_start_date')
     elif task_column == 'End Date':
         task_update_column_enter =[
@@ -439,15 +494,14 @@ def Update():
         {
             'type': "input",
             "name": "confirm",
-            "message": "Are you sure, want to update the task status (y/N):",
+            "message": "Are you sure, want to update the task status (Y/N):",
             "validate": EmptyInputValidator(),
             "filter": lambda val: str(val)
         }
     ]
-    task_update_confirm_prompt = prompt(task_update_confirm)
+    task_update_confirm_prompt = prompt(task_update_confirm,style=style1)
     task_confirm_data = task_update_confirm_prompt.get('confirm')
     task_confirm_data = task_confirm_data.capitalize()
-    print(task_confirm_data,'afsdf')
     modal = models.Tasks
     if task_confirm_data == 'Y':
         # try:
@@ -461,8 +515,8 @@ def Update():
         task.save()
         
         tasksss = modal.select().filter(modal.task_id == id)
-        print(tasksss,'fdsgfgsfdf')
-        print(Fore.GREEN,'Task updated',task)
+        print()
+        print(Fore.GREEN,'*******************  Task updated  *******************')
         print(Style.RESET_ALL)
         
         # except:
@@ -473,7 +527,7 @@ def Update():
     elif task_confirm_data == 'N':
         print(Fore.BLUE,'Given task status is not updated')
     else:
-        print(Fore.RED,'Please enter (y/N), to confirm the updation')
+        print(Fore.RED,'Please enter (Y/N), to confirm the updation')
         # task_delete_confirm_prompt = prompt(task_delete_confirm) 
         UpdateConfirm(id,task_column,task_update_data)
     PreviousActions('tasks','Tasks')
@@ -506,7 +560,8 @@ def get_content_group(user):
     # elif status == 'Completed':
     #     color = 'green'
     return f"[b][yellow]{t_id}.{title}[/b]\n[white]{desc}"
-   
+
+
 def Groups():
     list_ques=[
         {
@@ -517,7 +572,7 @@ def Groups():
         },
     ]
     
-    answers = prompt(list_ques)
+    answers = prompt(list_ques,style=style1)
     if answers.get("user_option") == "Create":
         grp_add = [
             {
@@ -541,7 +596,7 @@ def Groups():
                 'choices':['Add Now', 'Add Later']
             },
         ]
-        answers = prompt(grp_add)
+        answers = prompt(grp_add,style=style1)
         name = answers.get('grp_name')
         desc = answers.get('grp_desc')
         grp_add_users = answers.get('grp_add_users')
@@ -556,29 +611,179 @@ def Groups():
                  {
                     'type': "checkbox",
                     "name": "grp_add_users",
-                    "message": "Select the users to add in the group ",
+                    "message": "Select the users to add in the group (Note ; use 'space' key for select) ",
                     'choices':users
                 },
             ]
-            users_answers = prompt(users_prompt)
+            users_answers = prompt(users_prompt,style=style1)
             users_selected = users_answers.get('grp_add_users')
             models.Group.create(title=name,status='Pending',priority='priority',description=desc,user_ids=users_selected)
         elif grp_add_users == 'Add Later':
-            models.Group.create(title=name,status='Pending',priority='priority',description=desc)
-        print(Back.GREEN,'*** Group created successfully ***')
-        print(Style.RESET_ALL)
+         
+            models.Group.create(title=name,status='Pending',priority='priority',description=desc,user_ids=None)
+            print()
+        print(Back.GREEN,'**************** Group created successfully ****************',end='')
+        print(Back.RESET)
+        print()
     elif answers.get("user_option") == "View":
         ViewGroups()
         
     # elif answers.get("user_option") == "Delete":
     #     Delete()
-    # elif answers.get("user_option") == "Update":
-    #     Update()
+    elif answers.get("user_option") == "Update":
+        response = []
+        task_lst = models.Group.select()
+
+        for l in task_lst.dicts():
+            response.append(l)
+        console = Console()
+        user_renderables = [Panel(get_content_group(user), expand=True)  for user in response]
+        console.print(Columns(user_renderables))
+        select_group = [{
+                           
+            'type': "input",
+            "name": "group_select",
+            "message": "Enter Group ID to update :",
+            "validate": EmptyInputValidator(),
+            "filter": lambda val: str(val)
+        
+        }]
+        grp_select = prompt(select_group,style=style1)
+        group_id = grp_select.get('group_select')
+        show_groups = [
+            {
+                    'type': "list",
+                    "name": "show_groups",
+                    "message": "Choose action ",
+                    'choices':['Add Users to Group']
+                },
+        ]
+        user_list_prompt = prompt(show_groups,style=style1)
+        group_edit = user_list_prompt.get('show_groups')
+        
+        if group_edit == 'Add Users to Group':
+            row=models.Group.get(models.Group.group_id==group_id)
+            try:
+                usr_list = ast.literal_eval(row.user_ids)
+            except:
+                usr_list = []
+           
+            print(f'Users in {row.title}',end='')
+            print(Fore.RESET)
+            if usr_list is not None:
+                console.print(Columns([Panel(user, expand=True) for user in usr_list]))
+            else:
+                print(Fore.RED,f'No user Found in this {row.title}',end='')
+                print(Fore.RESET)
+
+            users = []
+            usersdata = models.Users.select()
+            for l in usersdata.dicts():
+              
+                if l['username'] not in usr_list:
+                    users.append(l['username'])
+            # print(users,'67568437658346')
+
+            users_prompt = [
+                 {
+                    'type': "checkbox",
+                    "name": "grp_add_users",
+                    "message": "Select the users to add in the group (Note : use 'space' key for select) ",
+                    'choices':users
+                },
+            ]
+            users_answers = prompt(users_prompt,style=style1)
+            users_selected = users_answers.get('grp_add_users')
+        
+            console.print(Columns([Panel(user, expand=True) for user in users_selected]))
+            row=models.Group.get(models.Group.group_id==group_id)
+            try:
+                use_lst = ast.literal_eval(row.user_ids)
+            except:
+                use_lst = []
+      
+            userss_selected=users_selected+use_lst
+           
+            row.user_ids=userss_selected
+            row.save()
+            print(Fore.GREEN,'********** Users Successfully added in this group **********')
+
+        elif group_edit == 'Edit Group':
+        
+   
+            select_group = [{
+                            
+                'type': "input",
+                "name": "group_select",
+                "message": "Enter Group ID to Delete :",
+                "validate": EmptyInputValidator(),
+                "filter": lambda val: str(val)
+            
+            }]
+            grp_select = prompt(select_group,style=style1)
+            grp_id = grp_select.get('group_select')
+            task_delete_confirm =[
+                {
+                    'type': "input",
+                    "name": "confirm",
+                    "message": "Are you sure, want to Update the Group details (Y/N):",
+                    "validate": EmptyInputValidator(),
+                    "filter": lambda val: str(val)
+                }
+            ]
+            task_delete_confirm_prompt = prompt(task_delete_confirm,style=style1)
+            task_confirm_data = (task_delete_confirm_prompt.get('confirm'))
+            if task_confirm_data == 'y' or task_confirm_data == 'Y':
+                row=models.Group.get(models.Group.group_id==grp_id)
+                
+                row.delete_instance()
+                print(Fore.GREEN,'********** Group Updated **********')
+
+            PreviousActions('tasks','Groups')
+    elif answers.get("user_option") == "Delete":
+        response = []
+        task_lst = models.Group.select()
+
+        for l in task_lst.dicts():
+            response.append(l)
+        console = Console()
+        user_renderables = [Panel(get_content_group(user), expand=True)  for user in response]
+        console.print(Columns(user_renderables))
+        select_group = [{
+                           
+            'type': "input",
+            "name": "group_select",
+            "message": "Enter Group ID to Delete :",
+            "validate": EmptyInputValidator(),
+            "filter": lambda val: str(val)
+        
+        }]
+        grp_select = prompt(select_group,style=style1)
+        grp_id = grp_select.get('group_select')
+        task_delete_confirm =[
+            {
+                'type': "input",
+                "name": "confirm",
+                "message": "Are you sure, want to delete the Group (Y/N):",
+                "validate": EmptyInputValidator(),
+                "filter": lambda val: str(val)
+            }
+        ]
+        task_delete_confirm_prompt = prompt(task_delete_confirm,style=style1)
+        task_confirm_data = (task_delete_confirm_prompt.get('confirm'))
+        if task_confirm_data == 'y' or task_confirm_data == 'Y':
+            row=models.Group.get(models.Group.group_id==grp_id)
+            row.delete_instance()
+            print(Fore.GREEN,'********** Group Deleted **********')
+
     elif answers.get("user_option") == "Go back to the main menu":
         MainMenu()
     PreviousActions('tasks','Groups')
    
-
+def Meetings():
+    print(Fore.RED,'This option is available in coming version.....')
+    print(Fore.RESET)
+    MainMenu()
 
 def Users():
     user_add = [
@@ -599,15 +804,17 @@ def Users():
             
         ]
     
-    answers = prompt(user_add)
+    answers = prompt(user_add,style=style1)
     username = answers.get('username')
     userpassword = answers.get('user_pwd')
     models.Users.create(username=username,password=userpassword,status=1)
+    print(Fore.GREEN,'================ User created successfully ==================')
+    PreviousActions('tasks','Groups')
 
 
 def main():
     # answers = prompt(questions, style=custom_style_3)
-    answers = prompt(questions)
+    answers = prompt(questions,style=style1)
 
     if answers.get("user_option") == "Tasks":
         Tasks()
@@ -616,7 +823,7 @@ def main():
     elif answers.get("user_option") == "Groups":
         Groups()
     elif answers.get("user_option") == "Meetings":
-        Update(a, b)
+        Meetings()
 
 
 if __name__ == "__main__":
