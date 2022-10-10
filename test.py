@@ -394,12 +394,19 @@ def ViewGroups():
         modal = models.Group
         group_users = modal.get(modal.group_id == show_users_list)
         try:
-            if group_users:
-                console.print(Columns([Panel(user, expand=True) for user in group_users]))
+            
+            if ast.literal_eval(group_users.user_ids):
+                console.print(Columns([Panel(user, expand=True) for user in ast.literal_eval(group_users.user_ids)]))
+              
+            else:
+                print(Fore.RED,'Oops!, No user found in this Group',end='')
+                print(Fore.RESET)
         except:
             print(Fore.RED,'Oops!, No user found in this Group',end='')
             print(Fore.RESET)
     except:
+        print(Fore.RED,'Oops!, Group id is not found, please try with valid group id',end='')
+        print(Fore.RESET)
         pass
     # user_grp_list = ast.literal_eval(group_users.user_ids)
     # console.print(Columns([Panel(user, expand=True) for user in user_grp_list]))
